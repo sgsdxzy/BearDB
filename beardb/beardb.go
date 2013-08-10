@@ -6,9 +6,13 @@ import (
 	"os"
 )
 
+var (
+	NullSerializer = new(nullSerializer) //Place holder that does nothing
+)
+
 //Serializer warpper of basic types
 
-type NullSerializer struct{} //Place holder that does nothing
+type nullSerializer struct{}
 type Int32Serializer int32
 type Int64Serializer int64
 type Float32Serializer float32
@@ -56,6 +60,7 @@ func (o *outputer) Output(offset int64, s Serializer) Serializer {
 }
 
 //The compact and most simplified append-and-read-only database
+//=============================================================================
 type blackBearDB struct {
 	file  *os.File
 	embed bool //Whether embed keys in db
@@ -105,12 +110,15 @@ func (db *blackBearDB) Close() {
 	db.file.Close()
 }
 
+//A full-featured mutable database
+//=============================================================================
+
 //Implementations of Serializer wrappers
 //=============================================================================
 
 //Do nothing
-func (i *NullSerializer) Serialize(w io.Writer)   {}
-func (i *NullSerializer) Deserialize(r io.Reader) {}
+func (i *nullSerializer) Serialize(w io.Writer)   {}
+func (i *nullSerializer) Deserialize(r io.Reader) {}
 
 //=============================================================================
 

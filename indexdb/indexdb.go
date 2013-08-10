@@ -56,15 +56,15 @@ func (o *outputer) Output(offset int64, s Serializer) Serializer {
 }
 
 //The compact database
-type indexdb struct {
+type compactIndexDB struct {
 	file  *os.File
 	embed bool //Whether embed keys in db
 	i     inputer
 	o     outputer
 }
 
-func NewIndexDB(path string, e bool) *indexdb {
-	db := new(indexdb)
+func NewIndexDB(path string, e bool) *compactIndexDB {
+	db := new(compactIndexDB)
 	db.file, _ = os.OpenFile(path, os.O_RDWR|os.O_CREATE, os.ModePerm)
 	db.embed = e
 	db.i = inputer{db.file}
@@ -72,11 +72,11 @@ func NewIndexDB(path string, e bool) *indexdb {
 	return db
 }
 
-func (db *indexdb) Embed() bool {
+func (db *compactIndexDB) Embed() bool {
         return db.embed
 }
 
-func (db *indexdb) AddEntry(key Serializer, value Serializer) int64 {
+func (db *compactIndexDB) AddEntry(key Serializer, value Serializer) int64 {
 	id := db.i.Input(value)
 	if db.embed {
 		db.i.Input(key)
@@ -84,12 +84,12 @@ func (db *indexdb) AddEntry(key Serializer, value Serializer) int64 {
 	return id
 }
 
-func (db *indexdb) GetValue(id int64, value Serializer) Serializer {
+func (db *compactIndexDB) GetValue(id int64, value Serializer) Serializer {
 	return db.o.Output(id, value)
 }
 
 //If embed==false, key is not changed and directly returned
-func (db *indexdb) GetKeyAndValue(id int64, key, value Serializer) (Serializer, Serializer) {
+func (db *compactIndexDB) GetKeyAndValue(id int64, key, value Serializer) (Serializer, Serializer) {
 	db.o.reader.Seek(id, os.SEEK_SET)
 	value.Deserialize(db.o.reader)
 	if db.embed {
@@ -99,7 +99,7 @@ func (db *indexdb) GetKeyAndValue(id int64, key, value Serializer) (Serializer, 
 }
 
 //Make sure to close it before exit!
-func (db *indexdb) Close() {
+func (db *compactIndexDB) Close() {
 	db.file.Close()
 }
 

@@ -1,4 +1,4 @@
-package indexdb
+package beardb
 
 import (
 	"encoding/binary"
@@ -23,7 +23,7 @@ type Serializer interface {
 	Deserialize(r io.Reader)
 }
 
-//Inputer for Index DataBase
+//Inputer for Bear DataBase
 type inputer struct {
 	writer io.WriteSeeker
 }
@@ -39,7 +39,7 @@ func (i *inputer) Input(s Serializer) int64 {
 	return start
 }
 
-//Outputer for Index DataBase
+//Outputer for Bear DataBase
 type outputer struct {
 	reader io.ReadSeeker
 }
@@ -55,16 +55,16 @@ func (o *outputer) Output(offset int64, s Serializer) Serializer {
 	return s
 }
 
-//The compact database
-type compactIndexDB struct {
+//The compact and most simplified append-and-read-only database
+type blackBearDB struct {
 	file  *os.File
 	embed bool //Whether embed keys in db
 	i     inputer
 	o     outputer
 }
 
-func NewIndexDB(path string, e bool) *compactIndexDB {
-	db := new(compactIndexDB)
+func NewBlackBearDB(path string, e bool) *blackBearDB {
+	db := new(blackBearDB)
 	db.file, _ = os.OpenFile(path, os.O_RDWR|os.O_CREATE, os.ModePerm)
 	db.embed = e
 	db.i = inputer{db.file}
@@ -72,11 +72,13 @@ func NewIndexDB(path string, e bool) *compactIndexDB {
 	return db
 }
 
-func (db *compactIndexDB) Embed() bool {
-        return db.embed
+//Have this DB embedded keys?
+func (db *blackBearDB) Embed() bool {
+	return db.embed
 }
 
-func (db *compactIndexDB) AddEntry(key Serializer, value Serializer) int64 {
+//If the key is not to be embeded, NullSerializer can be used for it
+func (db *blackBearDB) AddEntry(key Serializer, value Serializer) int64 {
 	id := db.i.Input(value)
 	if db.embed {
 		db.i.Input(key)
@@ -84,12 +86,12 @@ func (db *compactIndexDB) AddEntry(key Serializer, value Serializer) int64 {
 	return id
 }
 
-func (db *compactIndexDB) GetValue(id int64, value Serializer) Serializer {
+func (db *blackBearDB) GetValue(id int64, value Serializer) Serializer {
 	return db.o.Output(id, value)
 }
 
 //If embed==false, key is not changed and directly returned
-func (db *compactIndexDB) GetKeyAndValue(id int64, key, value Serializer) (Serializer, Serializer) {
+func (db *blackBearDB) GetKeyAndValue(id int64, key, value Serializer) (Serializer, Serializer) {
 	db.o.reader.Seek(id, os.SEEK_SET)
 	value.Deserialize(db.o.reader)
 	if db.embed {
@@ -99,7 +101,7 @@ func (db *compactIndexDB) GetKeyAndValue(id int64, key, value Serializer) (Seria
 }
 
 //Make sure to close it before exit!
-func (db *compactIndexDB) Close() {
+func (db *blackBearDB) Close() {
 	db.file.Close()
 }
 

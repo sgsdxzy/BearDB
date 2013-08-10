@@ -7,16 +7,17 @@ import (
 )
 
 var (
-	NullSerializer = new(nullSerializer) //Place holder that does nothing
+	NilSerializer = new(nilSerializer) //Place holder that does nothing
 )
 
 //Serializer warpper of basic types
 
-type nullSerializer struct{}
-type Int32Serializer int32
-type Int64Serializer int64
-type Float32Serializer float32
-type Float64Serializer float64
+type nilSerializer struct{}
+type boolSerializer int8 //Must be fixed-size
+type int32Serializer int32
+type int64Serializer int64
+type float32Serializer float32
+type float64Serializer float64
 
 //Serialize writes serialized bytes to io.Writer and returns number of bytes wrote
 //Deserialize reads bytes from io.Reader
@@ -117,78 +118,134 @@ func (db *blackBearDB) Close() {
 //=============================================================================
 
 //Do nothing
-func (i *nullSerializer) Serialize(w io.Writer)   {}
-func (i *nullSerializer) Deserialize(r io.Reader) {}
+func (i *nilSerializer) Serialize(w io.Writer)   {}
+func (i *nilSerializer) Deserialize(r io.Reader) {}
 
 //=============================================================================
 
-func (i *Int32Serializer) Set(n int32) {
-	*i = Int32Serializer(n)
+func NewBoolSerializer(n bool) *boolSerializer {
+        var i boolSerializer
+	if n {
+		i = boolSerializer(1)
+	} else {
+		i = boolSerializer(0)
+	}
+	return &i
 }
 
-func (i *Int32Serializer) Get() int32 {
+func (i *boolSerializer) Set(n bool) {
+	if n {
+		*i = boolSerializer(1)
+	} else {
+		*i = boolSerializer(0)
+	}
+}
+
+func (i *boolSerializer) Get() bool {
+	if *i == 1 {
+		return true
+	} else {
+		return false
+	}
+}
+
+func (i *boolSerializer) Serialize(w io.Writer) {
+	binary.Write(w, binary.LittleEndian, i)
+}
+
+func (i *boolSerializer) Deserialize(r io.Reader) {
+	binary.Read(r, binary.LittleEndian, i)
+}
+
+//=============================================================================
+
+func NewInt32Serializer(n int32) *int32Serializer {
+	r := int32Serializer(n)
+	return &r
+}
+
+func (i *int32Serializer) Set(n int32) {
+	*i = int32Serializer(n)
+}
+
+func (i *int32Serializer) Get() int32 {
 	return int32(*i)
 }
 
-func (i *Int32Serializer) Serialize(w io.Writer) {
+func (i *int32Serializer) Serialize(w io.Writer) {
 	binary.Write(w, binary.LittleEndian, i)
 }
 
-func (i *Int32Serializer) Deserialize(r io.Reader) {
+func (i *int32Serializer) Deserialize(r io.Reader) {
 	binary.Read(r, binary.LittleEndian, i)
 }
 
 //=============================================================================
 
-func (i *Int64Serializer) Set(n int64) {
-	*i = Int64Serializer(n)
+func NewInt64Serializer(n int64) *int64Serializer {
+	r := int64Serializer(n)
+	return &r
 }
 
-func (i *Int64Serializer) Get() int64 {
+func (i *int64Serializer) Set(n int64) {
+	*i = int64Serializer(n)
+}
+
+func (i *int64Serializer) Get() int64 {
 	return int64(*i)
 }
 
-func (i *Int64Serializer) Serialize(w io.Writer) {
+func (i *int64Serializer) Serialize(w io.Writer) {
 	binary.Write(w, binary.LittleEndian, i)
 }
 
-func (i *Int64Serializer) Deserialize(r io.Reader) {
+func (i *int64Serializer) Deserialize(r io.Reader) {
 	binary.Read(r, binary.LittleEndian, i)
 }
 
 //=============================================================================
 
-func (i *Float32Serializer) Set(n float32) {
-	*i = Float32Serializer(n)
+func NewFloat32Serializer(n float32) *float32Serializer {
+	r := float32Serializer(n)
+	return &r
 }
 
-func (i *Float32Serializer) Get() float32 {
+func (i *float32Serializer) Set(n float32) {
+	*i = float32Serializer(n)
+}
+
+func (i *float32Serializer) Get() float32 {
 	return float32(*i)
 }
 
-func (i *Float32Serializer) Serialize(w io.Writer) {
+func (i *float32Serializer) Serialize(w io.Writer) {
 	binary.Write(w, binary.LittleEndian, i)
 }
 
-func (i *Float32Serializer) Deserialize(r io.Reader) {
+func (i *float32Serializer) Deserialize(r io.Reader) {
 	binary.Read(r, binary.LittleEndian, i)
 }
 
 //=============================================================================
 
-func (i *Float64Serializer) Set(n float64) {
-	*i = Float64Serializer(n)
+func NewFloat64Serializer(n float64) *float64Serializer {
+	r := float64Serializer(n)
+	return &r
 }
 
-func (i *Float64Serializer) Get() float64 {
+func (i *float64Serializer) Set(n float64) {
+	*i = float64Serializer(n)
+}
+
+func (i *float64Serializer) Get() float64 {
 	return float64(*i)
 }
 
-func (i *Float64Serializer) Serialize(w io.Writer) {
+func (i *float64Serializer) Serialize(w io.Writer) {
 	binary.Write(w, binary.LittleEndian, i)
 }
 
-func (i *Float64Serializer) Deserialize(r io.Reader) {
+func (i *float64Serializer) Deserialize(r io.Reader) {
 	binary.Read(r, binary.LittleEndian, i)
 }
 

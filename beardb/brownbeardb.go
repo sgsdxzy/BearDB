@@ -101,13 +101,22 @@ func (db *brownBearDB) Defrag(begin, end int64) {
 		for {
 			db.o.Output(current-sizeLength, nsize)
 			if nsize.Get() < 0 {
+                                if db.FragInfo() {
+                                        delete(db.frag, current)
+                                }
 				size.Set(size.Get() + nsize.Get())
 				current += int64(-nsize.Get())
 				if current > end {
+                                        if db.FragInfo() {
+                                                db.frag[begin] = -size.Get()
+                                        }
 					db.i.InputAt(begin-sizeLength, size)
 					return
 				}
 			} else {
+                                if db.FragInfo() {
+                                        db.frag[begin] = -size.Get()
+                                }
 				db.i.InputAt(begin-sizeLength, size)
 				begin = current
 				break
@@ -132,7 +141,7 @@ func (db *brownBearDB) CreateFragInfo() {
 	for current < db.Size() {
 		db.o.Output(current-sizeLength, size)
 		if size.Get() < 0 {
-			db.frag[current] = -size.Get() - sizeLength
+			db.frag[current] = -size.Get()
 		}
 		current += int64Abs(size.Get())
 	}
@@ -143,28 +152,38 @@ func (db *brownBearDB) Size() int64 {
 	return size
 }
 
+//Size capacity at id
+func (db *brownBearDB) Cap(id int64) int64 {
+        size := new(Int32Serializer)
+        db.o.Output(id-sizeLength,size)
+        return int64Abs(size.Get())
+}
+
 //AddEntry will try to insert entry to fragments large enough to hold it
 //If there is no such fragment, it will be appended to the end of file
 func (db *brownBearDB) AddEntry(key Serializer, value Serializer) int64 {
 	var b bytes.Buffer
 	value.Serialize(&b)
 	key.Serialize(&b)
-	var length int32 = int32(b.Len())
-	for id, size := range db.frag {
-		if size >= length { //Enough to hold
-			newsize := NewInt32Serializer(length + sizeLength)
-			db.i.InputAt(id-sizeLength, newsize)
-			db.file.Seek(id, os.SEEK_SET)
-			b.WriteTo(db.file)
-			newsize.Set(-(size - length))
-			db.i.InputAt(id+int64(length), newsize)
-			delete(db.frag, id)
-			db.frag[id+int64(length)+sizeLength] = size - sizeLength - length
-			return id
-		}
-	}
-	//Have to append at the end
-	return db.AppendEntry(key, value)
+	var length int32 = int32(b.Len()+sizeLength)
+        if db.FragInfo() {
+                for id, size := range db.frag {
+                        if size >= length { //Enough to hold
+                                newsize := NewInt32Serializer(length)
+                                db.i.InputAt(id-sizeLength, newsize)
+                                db.file.Seek(id, os.SEEK_SET)
+                                b.WriteTo(db.file)
+                                newsize.Set(-(size - length))
+                                db.i.InputAt(id+int64(length)-sizeLength, newsize)
+                                delete(db.frag, id)
+                                db.frag[id+int64(length)+sizeLength] = size - sizeLength - length
+                                return id
+                        }
+                        }
+        }
+
+        //Have to append at the end
+        return db.AppendEntry(key, value)
 }
 
 //AppendEntry puts the entry at the end of file

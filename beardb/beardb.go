@@ -66,49 +66,39 @@ func (o *outputer) Output(offset int64, s Serializer) Serializer {
 //=============================================================================
 type blackBearDB struct {
 	file  *os.File
-	embed bool //Whether embed keys in db
 	i     inputer
 	o     outputer
 }
 
-func NewBlackBearDB(path string, e bool) *blackBearDB {
+func NewBlackBearDB(path string) *blackBearDB {
 	db := new(blackBearDB)
 	db.file, _ = os.OpenFile(path, os.O_RDWR|os.O_CREATE, os.ModePerm)
-	db.embed = e
 	db.i = inputer{db.file}
 	db.o = outputer{db.file}
 	return db
 }
 
-//Have this DB embedded keys?
-func (db *blackBearDB) Embed() bool {
-	return db.embed
-}
-
 //If the key is not to be embeded, NilSerializer can be used for it
 func (db *blackBearDB) AddEntry(key Serializer, value Serializer) int64 {
 	id := db.i.Input(value)
-	if db.embed {
-		db.i.Input(key)
-	}
+        db.i.Input(key)
 	return id
 }
 
+//Get only the value
 func (db *blackBearDB) GetValue(id int64, value Serializer) Serializer {
 	return db.o.Output(id, value)
 }
 
-//If embed==false, key is not changed and directly returned
+//Get both key and value
 func (db *blackBearDB) GetKeyAndValue(id int64, key, value Serializer) (Serializer, Serializer) {
 	db.o.reader.Seek(id, os.SEEK_SET)
 	value.Deserialize(db.o.reader)
-	if db.embed {
-		key.Deserialize(db.o.reader)
-	}
+        key.Deserialize(db.o.reader)
 	return key, value
 }
 
-//Make sure to close it before exit!
+//Make sure to close it before exit! Better use defer.
 func (db *blackBearDB) Close() {
 	db.file.Close()
 }

@@ -1,9 +1,8 @@
 package beardb
 
 import (
-	"encoding/binary"
 	"io"
-	"os"
+	"encoding/binary"
 )
 
 var (
@@ -20,91 +19,6 @@ type Int64Serializer int64
 type Float32Serializer float32
 type Float64Serializer float64
 type StringSerializer []byte
-
-//Serialize writes serialized bytes to io.Writer and returns number of bytes wrote
-//Deserialize reads bytes from io.Reader
-//Serializers may always be pointers as Deserialize need to change the
-//contents of it
-type Serializer interface {
-	Serialize(w io.Writer)
-	Deserialize(r io.Reader)
-}
-
-//Inputer for Bear DataBase
-type inputer struct {
-	writer io.WriteSeeker
-}
-
-func NewInputer(w io.WriteSeeker) *inputer {
-	return &inputer{w}
-}
-
-//Put s into database, numeric item id is returned
-func (i *inputer) Input(s Serializer) int64 {
-	start, _ := i.writer.Seek(0, os.SEEK_END)
-	s.Serialize(i.writer)
-	return start
-}
-
-//Outputer for Bear DataBase
-type outputer struct {
-	reader io.ReadSeeker
-}
-
-func NewOutputer(r io.ReadSeeker) *outputer {
-	return &outputer{r}
-}
-
-//Reads data at offset to s
-func (o *outputer) Output(offset int64, s Serializer) Serializer {
-	o.reader.Seek(offset, os.SEEK_SET)
-	s.Deserialize(o.reader)
-	return s
-}
-
-//The compact and most simplified append-and-read-only database
-//=============================================================================
-type blackBearDB struct {
-	file  *os.File
-	i     inputer
-	o     outputer
-}
-
-func NewBlackBearDB(path string) *blackBearDB {
-	db := new(blackBearDB)
-	db.file, _ = os.OpenFile(path, os.O_RDWR|os.O_CREATE, os.ModePerm)
-	db.i = inputer{db.file}
-	db.o = outputer{db.file}
-	return db
-}
-
-//If the key is not to be embeded, NilSerializer can be used for it
-func (db *blackBearDB) AddEntry(key Serializer, value Serializer) int64 {
-	id := db.i.Input(value)
-        db.i.Input(key)
-	return id
-}
-
-//Get only the value
-func (db *blackBearDB) GetValue(id int64, value Serializer) Serializer {
-	return db.o.Output(id, value)
-}
-
-//Get both key and value
-func (db *blackBearDB) GetKeyAndValue(id int64, key, value Serializer) (Serializer, Serializer) {
-	db.o.reader.Seek(id, os.SEEK_SET)
-	value.Deserialize(db.o.reader)
-        key.Deserialize(db.o.reader)
-	return key, value
-}
-
-//Make sure to close it before exit! Better use defer.
-func (db *blackBearDB) Close() {
-	db.file.Close()
-}
-
-//A full-featured mutable database
-//=============================================================================
 
 //Implementations of Serializer wrappers
 //=============================================================================

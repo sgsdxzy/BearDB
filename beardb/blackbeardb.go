@@ -7,9 +7,9 @@ import (
 //The compact and most simplified append-and-read-only database
 //=============================================================================
 type blackBearDB struct {
-	file  *os.File
-	i     inputer
-	o     outputer
+	file *os.File
+	i    inputer
+	o    outputer
 }
 
 func NewBlackBearDB(path string) *blackBearDB {
@@ -23,13 +23,13 @@ func NewBlackBearDB(path string) *blackBearDB {
 //If the key is not to be embeded, NilSerializer can be used for it
 func (db *blackBearDB) AddEntry(key Serializer, value Serializer) int64 {
 	id := db.i.Input(value)
-        db.i.Input(key)
+	db.i.Input(key)
 	return id
 }
 
 //Modify value at id. The serialized size of value must be exactly the same.
-func (db *blackBearDB) ReEntry(id int64, value Serializer) {
-        db.i.InputAt(id, value)
+func (db *blackBearDB) Modify(id int64, value Serializer) {
+	db.i.InputAt(id, value)
 }
 
 //Get only the value
@@ -41,7 +41,7 @@ func (db *blackBearDB) GetValue(id int64, value Serializer) Serializer {
 func (db *blackBearDB) GetKeyAndValue(id int64, key, value Serializer) (Serializer, Serializer) {
 	db.o.reader.Seek(id, os.SEEK_SET)
 	value.Deserialize(db.o.reader)
-        key.Deserialize(db.o.reader)
+	key.Deserialize(db.o.reader)
 	return key, value
 }
 
@@ -51,5 +51,3 @@ func (db *blackBearDB) Close() {
 }
 
 //=============================================================================
-
-

@@ -32,13 +32,13 @@ func (i *inputer) Input(s Serializer) int64 {
 
 //Re-input s at offset. The serialized size of s must be kept excatly the same
 func (i *inputer) InputAt(offset int64, s Serializer) {
-        i.writer.Seek(offset, os.SEEK_SET)
-        s.Serialize(i.writer)
+	i.writer.Seek(offset, os.SEEK_SET)
+	s.Serialize(i.writer)
 }
 
 //The current size
 func (i *inputer) Size() (ret int64, err error) {
-        return i.writer.Seek(0, os.SEEK_END)
+	return i.writer.Seek(0, os.SEEK_END)
 }
 
 //Outputer for Bear DataBase
@@ -56,4 +56,3 @@ func (o *outputer) Output(offset int64, s Serializer) Serializer {
 	s.Deserialize(o.reader)
 	return s
 }
-

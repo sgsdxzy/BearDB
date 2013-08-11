@@ -1,8 +1,8 @@
 package beardb
 
 import (
-	"io"
 	"encoding/binary"
+	"io"
 )
 
 var (
@@ -30,7 +30,7 @@ func (i *nilSerializer) Deserialize(r io.Reader) {}
 //=============================================================================
 
 func NewBoolSerializer(n bool) *BoolSerializer {
-        var i BoolSerializer
+	var i BoolSerializer
 	if n {
 		i = BoolSerializer(1)
 	} else {
@@ -87,7 +87,6 @@ func (i *ByteSerializer) Deserialize(r io.Reader) {
 }
 
 //=============================================================================
-
 
 func NewInt32Serializer(n int32) *Int32Serializer {
 	r := Int32Serializer(n)
@@ -190,19 +189,19 @@ func (s *StringSerializer) Set(n string) {
 	*s = StringSerializer(n)
 }
 
-func (s*StringSerializer) Get() string {
+func (s *StringSerializer) Get() string {
 	return string(*s)
 }
 
 func (s *StringSerializer) Serialize(w io.Writer) {
-        NewInt32Serializer(int32(len(*s))).Serialize(w)
+	NewInt32Serializer(int32(len(*s))).Serialize(w)
 	binary.Write(w, binary.LittleEndian, s)
 }
 
 func (s *StringSerializer) Deserialize(r io.Reader) {
-        length := new(Int32Serializer)
-        length.Deserialize(r)
-        *s = make(StringSerializer, int(length.Get()))
+	length := new(Int32Serializer)
+	length.Deserialize(r)
+	*s = make(StringSerializer, int(length.Get()))
 	binary.Read(r, binary.LittleEndian, s)
 }
 

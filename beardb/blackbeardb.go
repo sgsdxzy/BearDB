@@ -29,7 +29,7 @@ func (db *blackBearDB) AddEntry(key Serializer, value Serializer) int64 {
 
 //Modify value at id. The serialized size of value must be exactly the same.
 func (db *blackBearDB) ReEntry(id int64, value Serializer) {
-        db.i.Reput(id, value)
+        db.i.InputAt(id, value)
 }
 
 //Get only the value

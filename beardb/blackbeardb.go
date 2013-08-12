@@ -1,49 +1,83 @@
 package beardb
 
 import (
-	"os"
+        "encoding/gob"
 )
 
 //The compact and most simplified append-and-read-only database
 //=============================================================================
 type blackBearDB struct {
-	file *os.File
-	i    inputer
-	o    outputer
+        storage BearStorage
+        encoder *gob.Encoder //Encoder for appending
 }
 
-func NewBlackBearDB(path string) *blackBearDB {
-	db := new(blackBearDB)
-	db.file, _ = os.OpenFile(path, os.O_RDWR|os.O_CREATE, os.ModePerm)
-	db.i = inputer{db.file}
-	db.o = outputer{db.file}
-	return db
+func NewBlackBearDB(s BearStorage) *blackBearDB {
+        return &blackBearDB{s, gob.NewEncoder(WrapWriter(s,s.Size()))}
 }
 
-//If the key is not to be embeded, NilSerializer can be used for it
-func (db *blackBearDB) AddEntry(key Serializer, value Serializer) int64 {
-	return db.i.Inputs(value, key)
+//Internal libs
+//=============================================================================
+func (db *blackBearDB) encodeAt (e interface{}, offset int64) error {
+        return gob.NewEncoder(WrapWriter(db.storage, offset)).Encode(e)
 }
 
-//Modify value at id. The serialized size of value must be exactly the same.
-func (db *blackBearDB) Modify(id int64, value Serializer) {
-	db.i.InputAt(id, value)
+func (db *blackBearDB) decodeAt (e interface{}, offset int64) error {
+        return gob.NewDecoder(WrapReader(db.storage, offset)).Decode(e)
 }
 
-//Get only the value
-func (db *blackBearDB) GetValue(id int64, value Serializer) Serializer {
-	return db.o.Output(id, value)
+//Public methods
+//=============================================================================
+//Get current size
+func (db *blackBearDB) Size() int64 {
+        return db.storage.Size()
 }
 
-//Get both key and value
-func (db *blackBearDB) GetKeyAndValue(id int64, key, value Serializer) (Serializer, Serializer) {
-	db.o.Outputs(id, value, key)
-	return key, value
+//Append item to the end of storage. Item id is returned
+func (db *blackBearDB) AddItem(item interface{}) (id int64, err error) {
+        id = db.Size()
+        return id, db.encoder.Encode(item)
+}
+
+//Append items to the end of storage. Id of first item and first error(if any)
+//is returned
+func (db *blackBearDB) AddItems(items... interface{}) (id int64, err error) {
+        id = db.Size()
+        for _, item := range items {
+                err = db.encoder.Encode(item)
+                if err != nil {
+                        break
+                }
+        }
+        return id, err
+}
+
+//Modify value at id. The serialized size of value must be the same or less.
+//It could be very dangerous and generally discoraged
+func (db *blackBearDB) Modify(id int64, item interface{}) error {
+        return db.encodeAt(item, id)
+}
+
+//Get item at id
+func (db *blackBearDB) GetItem(id int64, item interface{}) error {
+	return db.decodeAt(item, id)
+}
+
+//Get items starting from id. If any error occur, the error is returned.
+func (db *blackBearDB) GetItems(id int64, items... interface{}) error {
+        var err error = nil
+        decoder := gob.NewDecoder(WrapReader(db.storage, id))
+        for _, item := range items {
+                err = decoder.Decode(item)
+                if err != nil {
+                        break
+                }
+        }
+	return err
 }
 
 //Make sure to close it before exit! Better use defer.
 func (db *blackBearDB) Close() {
-	db.file.Close()
+	db.storage.Close()
 }
 
 //=============================================================================

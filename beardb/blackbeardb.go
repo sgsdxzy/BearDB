@@ -22,9 +22,7 @@ func NewBlackBearDB(path string) *blackBearDB {
 
 //If the key is not to be embeded, NilSerializer can be used for it
 func (db *blackBearDB) AddEntry(key Serializer, value Serializer) int64 {
-	id := db.i.Input(value)
-	db.i.Input(key)
-	return id
+	return db.i.Inputs(value, key)
 }
 
 //Modify value at id. The serialized size of value must be exactly the same.
@@ -39,9 +37,7 @@ func (db *blackBearDB) GetValue(id int64, value Serializer) Serializer {
 
 //Get both key and value
 func (db *blackBearDB) GetKeyAndValue(id int64, key, value Serializer) (Serializer, Serializer) {
-	db.o.reader.Seek(id, os.SEEK_SET)
-	value.Deserialize(db.o.reader)
-	key.Deserialize(db.o.reader)
+	db.o.Outputs(id, value, key)
 	return key, value
 }
 

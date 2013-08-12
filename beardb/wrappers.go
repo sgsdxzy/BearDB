@@ -24,8 +24,8 @@ type String []byte
 //=============================================================================
 
 //Do nothing
-func (i *nilSerializer) Serialize(w io.Writer)   {}
-func (i *nilSerializer) Deserialize(r io.Reader) {}
+func (i *nilSerializer) Serialize(w io.Writer) error   { return nil }
+func (i *nilSerializer) Deserialize(r io.Reader) error { return nil }
 
 //=============================================================================
 
@@ -55,12 +55,12 @@ func (i *Bool) Get() bool {
 	}
 }
 
-func (i *Bool) Serialize(w io.Writer) {
-	binary.Write(w, binary.LittleEndian, i)
+func (i *Bool) Serialize(w io.Writer) error {
+	return binary.Write(w, binary.LittleEndian, i)
 }
 
-func (i *Bool) Deserialize(r io.Reader) {
-	binary.Read(r, binary.LittleEndian, i)
+func (i *Bool) Deserialize(r io.Reader) error {
+	return binary.Read(r, binary.LittleEndian, i)
 }
 
 //=============================================================================
@@ -78,12 +78,12 @@ func (i *Byte) Get() byte {
 	return byte(*i)
 }
 
-func (i *Byte) Serialize(w io.Writer) {
-	binary.Write(w, binary.LittleEndian, i)
+func (i *Byte) Serialize(w io.Writer) error {
+	return binary.Write(w, binary.LittleEndian, i)
 }
 
-func (i *Byte) Deserialize(r io.Reader) {
-	binary.Read(r, binary.LittleEndian, i)
+func (i *Byte) Deserialize(r io.Reader) error {
+	return binary.Read(r, binary.LittleEndian, i)
 }
 
 //=============================================================================
@@ -101,12 +101,12 @@ func (i *Int32) Get() int32 {
 	return int32(*i)
 }
 
-func (i *Int32) Serialize(w io.Writer) {
-	binary.Write(w, binary.LittleEndian, i)
+func (i *Int32) Serialize(w io.Writer) error {
+	return binary.Write(w, binary.LittleEndian, i)
 }
 
-func (i *Int32) Deserialize(r io.Reader) {
-	binary.Read(r, binary.LittleEndian, i)
+func (i *Int32) Deserialize(r io.Reader) error {
+	return binary.Read(r, binary.LittleEndian, i)
 }
 
 //=============================================================================
@@ -124,12 +124,12 @@ func (i *Int64) Get() int64 {
 	return int64(*i)
 }
 
-func (i *Int64) Serialize(w io.Writer) {
-	binary.Write(w, binary.LittleEndian, i)
+func (i *Int64) Serialize(w io.Writer) error {
+	return binary.Write(w, binary.LittleEndian, i)
 }
 
-func (i *Int64) Deserialize(r io.Reader) {
-	binary.Read(r, binary.LittleEndian, i)
+func (i *Int64) Deserialize(r io.Reader) error {
+	return binary.Read(r, binary.LittleEndian, i)
 }
 
 //=============================================================================
@@ -147,12 +147,12 @@ func (i *Float32) Get() float32 {
 	return float32(*i)
 }
 
-func (i *Float32) Serialize(w io.Writer) {
-	binary.Write(w, binary.LittleEndian, i)
+func (i *Float32) Serialize(w io.Writer) error {
+	return binary.Write(w, binary.LittleEndian, i)
 }
 
-func (i *Float32) Deserialize(r io.Reader) {
-	binary.Read(r, binary.LittleEndian, i)
+func (i *Float32) Deserialize(r io.Reader) error {
+	return binary.Read(r, binary.LittleEndian, i)
 }
 
 //=============================================================================
@@ -170,12 +170,12 @@ func (i *Float64) Get() float64 {
 	return float64(*i)
 }
 
-func (i *Float64) Serialize(w io.Writer) {
-	binary.Write(w, binary.LittleEndian, i)
+func (i *Float64) Serialize(w io.Writer) error {
+	return binary.Write(w, binary.LittleEndian, i)
 }
 
-func (i *Float64) Deserialize(r io.Reader) {
-	binary.Read(r, binary.LittleEndian, i)
+func (i *Float64) Deserialize(r io.Reader) error {
+	return binary.Read(r, binary.LittleEndian, i)
 }
 
 //=============================================================================
@@ -193,16 +193,16 @@ func (s *String) Get() string {
 	return string(*s)
 }
 
-func (s *String) Serialize(w io.Writer) {
+func (s *String) Serialize(w io.Writer) error {
 	NewInt32(int32(len(*s))).Serialize(w)
-	binary.Write(w, binary.LittleEndian, s)
+	return binary.Write(w, binary.LittleEndian, s)
 }
 
-func (s *String) Deserialize(r io.Reader) {
+func (s *String) Deserialize(r io.Reader) error {
 	length := new(Int32)
 	length.Deserialize(r)
 	*s = make(String, int(length.Get()))
-	binary.Read(r, binary.LittleEndian, s)
+	return binary.Read(r, binary.LittleEndian, s)
 }
 
 //=============================================================================

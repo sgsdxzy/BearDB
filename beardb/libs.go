@@ -38,13 +38,13 @@ func (o *SafeReader) Read(p []byte) (n int, err error) {
 	return
 }
 
-//Old API
+//Serializer API
 //=============================================================================
-//Serialize writes serialized bytes to io.Writer and returns number of bytes wrote
-//Deserialize reads bytes from io.Reader
-//Serializers may always be pointers as Deserialize need to change the
+//Serialize writes serialized bytes to io.Writer and returns any error
+//encountered. Deserialize reads bytes from io.Reader and re-construct the
+//item. Serializers may always be pointers as Deserialize need to change the
 //contents of it
 type Serializer interface {
-	Serialize(w io.Writer)
-	Deserialize(r io.Reader)
+	Serialize(w io.Writer) error
+	Deserialize(r io.Reader) error
 }

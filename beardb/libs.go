@@ -14,14 +14,10 @@ type Serializer interface {
 	Deserialize(r io.Reader)
 }
 
-//=============================================================================
 //Inputer for Bear DataBase
+//=============================================================================
 type inputer struct {
 	writer io.WriteSeeker
-}
-
-func NewInputer(w io.WriteSeeker) *inputer {
-	return &inputer{w}
 }
 
 //Put s into database, numeric item id is returned
@@ -60,14 +56,10 @@ func (i *inputer) Size() (ret int64, err error) {
 	return i.writer.Seek(0, os.SEEK_END)
 }
 
-//=============================================================================
 //Outputer for Bear DataBase
+//=============================================================================
 type outputer struct {
 	reader io.ReadSeeker
-}
-
-func NewOutputer(r io.ReadSeeker) *outputer {
-	return &outputer{r}
 }
 
 //Reads data at offset to s
@@ -84,10 +76,3 @@ func (o *outputer) Outputs(offset int64, items ...Serializer) {
 		s.Deserialize(o.reader)
 	}
 }
-
-//The current size
-func (o *outputer) Size() (ret int64, err error) {
-	return o.reader.Seek(0, os.SEEK_END)
-}
-
-//=============================================================================

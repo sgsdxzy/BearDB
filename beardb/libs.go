@@ -46,4 +46,13 @@ func (w *wrappedReader) Read(p []byte) (n int, err error) {
         return
 }
 
+//Old (but faster) API
 //=============================================================================
+//Serialize writes serialized bytes to io.Writer and returns number of bytes wrote
+//Deserialize reads bytes from io.Reader
+//Serializers may always be pointers as Deserialize need to change the
+//contents of it
+type Serializer interface {
+        Serialize(w io.Writer)
+        Deserialize(r io.Reader)
+}

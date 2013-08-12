@@ -76,8 +76,8 @@ func (db *blackBearDB) GetItems(id int64, items... interface{}) error {
 }
 
 //Make sure to close it before exit! Better use defer.
-func (db *blackBearDB) Close() {
-	db.storage.Close()
+func (db *blackBearDB) Close() error {
+	return db.storage.Close()
 }
 
 //=============================================================================

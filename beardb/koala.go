@@ -2,6 +2,7 @@ package beardb
 
 import (
         "errors"
+        "os"
         )
 
 type koala []byte
@@ -39,4 +40,29 @@ func (k *koala) Close() error {
 
 func (k *koala) Size() int64 {
         return int64(len(*k))
+}
+
+func (k *koala) ToFile(path string) error {
+        file, err := os.Create(path)
+        if err != nil {
+                return err
+        }
+        defer file.Close()
+        _, err = file.Write([]byte(*k))
+        return err
+}
+
+func (k *koala) FromFile(path string) error {
+        file, err := os.Open(path)
+        if err != nil {
+                return err
+        }
+        defer file.Close()
+        fi, err := file.Stat()
+        if err != nil {
+                return err
+        }
+        *k = make(koala, fi.Size())
+        _, err = file.Read([]byte(*k))
+        return err
 }

@@ -15,6 +15,18 @@ func NewBlackBearDB(s BearStorage) *blackBearDB {
 	return &blackBearDB{s, make(chan bool, 1)}
 }
 
+//Public methods
+//=============================================================================
+//Get current size
+func (db *blackBearDB) Size() int64 {
+	return db.storage.Size()
+}
+
+//Make sure to close it before exit! Better use defer.
+func (db *blackBearDB) Close() error {
+	return db.storage.Close()
+}
+
 //New Gob Writer. Create one for every thread doing writing
 //=============================================================================
 type blackBearGobWriter struct {
@@ -111,18 +123,6 @@ func (b *blackBearGobReader) GetItems(id int64, items ...interface{}) error {
 //Get the underlying DB
 func (b *blackBearGobReader) GetDB() *blackBearDB {
 	return b.db
-}
-
-//Public methods
-//=============================================================================
-//Get current size
-func (db *blackBearDB) Size() int64 {
-	return db.storage.Size()
-}
-
-//Make sure to close it before exit! Better use defer.
-func (db *blackBearDB) Close() error {
-	return db.storage.Close()
 }
 
 //=============================================================================

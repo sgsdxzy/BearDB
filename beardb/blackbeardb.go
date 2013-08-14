@@ -2,24 +2,33 @@ package beardb
 
 import (
 	"encoding/gob"
+	"sync"
 )
 
 //The compact and most simplified append-and-read-only database
 //=============================================================================
 type blackBearDB struct {
-	storage   BearStorage
-	appending chan bool //Appending lock
+	storage BearStorage
+	rwlock  sync.RWMutex //Appending lock
 }
 
-func NewBlackBearDB(s BearStorage) *blackBearDB {
-	return &blackBearDB{s, make(chan bool, 1)}
+//Non-locking getting size
+func (db *blackBearDB) size() int64 {
+	return db.storage.Size()
 }
 
 //Public methods
 //=============================================================================
+//Constructor
+func NewBlackBearDB(s BearStorage) *blackBearDB {
+	return &blackBearDB{storage: s}
+}
+
 //Get current size
 func (db *blackBearDB) Size() int64 {
-	return db.storage.Size()
+	db.rwlock.RLock()
+	defer db.rwlock.RUnlock()
+	return db.size()
 }
 
 //Make sure to close it before exit! Better use defer.
@@ -45,22 +54,22 @@ func (db *blackBearDB) NewGobWriter() *blackBearGobWriter {
 
 //Append item to the end of storage. Id and error(if any) is returned
 func (b *blackBearGobWriter) AddItem(item interface{}) (id int64, err error) {
-	b.db.appending <- true //Lock the db for appending
+	b.db.rwlock.Lock()
+	defer b.db.rwlock.Unlock()
 
-	id = b.db.Size()
+	id = b.db.size()
 	b.w.Offset = id
 	err = b.e.Encode(item)
-
-	<-b.db.appending //Unlock
 	return
 }
 
 //Append items to the end of storage. Id of first item and first error(if any)
 //encountered is returned
 func (b *blackBearGobWriter) AddItems(items ...interface{}) (id int64, err error) {
-	b.db.appending <- true //Lock the db for appending
+	b.db.rwlock.Lock()
+	defer b.db.rwlock.Unlock()
 
-	id = b.db.Size()
+	id = b.db.size()
 	b.w.Offset = id
 	for _, item := range items {
 		err = b.e.Encode(item)
@@ -68,14 +77,15 @@ func (b *blackBearGobWriter) AddItems(items ...interface{}) (id int64, err error
 			break
 		}
 	}
-
-	<-b.db.appending //Unlock
 	return
 }
 
 //Modify item at id. The serialized size of item must be the same or less.
 //It could be very dangerous and is generally discoraged
 func (b *blackBearGobWriter) Modify(id int64, item interface{}) error {
+	b.db.rwlock.Lock()
+	defer b.db.rwlock.Unlock()
+
 	b.w.Offset = id
 	return b.e.Encode(item)
 }
@@ -103,12 +113,16 @@ func (db *blackBearDB) NewGobReader() *blackBearGobReader {
 
 //Get item at id
 func (b *blackBearGobReader) GetItem(id int64, item interface{}) error {
+	b.db.rwlock.RLock()
+	defer b.db.rwlock.RUnlock()
 	b.r.Offset = id
 	return b.d.Decode(item)
 }
 
 //Get items starting from id. If any error occur, the error is returned.
 func (b *blackBearGobReader) GetItems(id int64, items ...interface{}) error {
+	b.db.rwlock.RLock()
+	defer b.db.rwlock.RUnlock()
 	b.r.Offset = id
 	var err error = nil
 	for _, item := range items {
@@ -141,22 +155,23 @@ func (db *blackBearDB) NewSerializerWriter() *blackBearSerializerWriter {
 
 //Append item to the end of storage. Id and error(if any) is returned
 func (b *blackBearSerializerWriter) AddItem(item Serializer) (id int64, err error) {
-	b.db.appending <- true //Lock the db for appending
+	b.db.rwlock.Lock()
+	defer b.db.rwlock.Unlock()
 
-	id = b.db.Size()
+	id = b.db.size()
 	b.w.Offset = id
 	err = item.Serialize(&b.w)
 
-	<-b.db.appending //Unlock
 	return
 }
 
 //Append items to the end of storage. Id of first item and first error(if any)
 //encountered is returned
 func (b *blackBearSerializerWriter) AddItems(items ...Serializer) (id int64, err error) {
-	b.db.appending <- true //Lock the db for appending
+	b.db.rwlock.Lock()
+	defer b.db.rwlock.Unlock()
 
-	id = b.db.Size()
+	id = b.db.size()
 	b.w.Offset = id
 	for _, item := range items {
 		err = item.Serialize(&b.w)
@@ -165,13 +180,15 @@ func (b *blackBearSerializerWriter) AddItems(items ...Serializer) (id int64, err
 		}
 	}
 
-	<-b.db.appending //Unlock
 	return
 }
 
 //Modify item at id. The serialized size of item must be the same or less.
 //It could be very dangerous and is generally discoraged
 func (b *blackBearSerializerWriter) Modify(id int64, item Serializer) error {
+	b.db.rwlock.Lock()
+	defer b.db.rwlock.Unlock()
+
 	b.w.Offset = id
 	return item.Serialize(&b.w)
 }
@@ -197,12 +214,18 @@ func (db *blackBearDB) NewSerializerReader() *blackBearSerializerReader {
 
 //Get item at id
 func (b *blackBearSerializerReader) GetItem(id int64, item Serializer) error {
+	b.db.rwlock.RLock()
+	defer b.db.rwlock.RUnlock()
+
 	b.r.Offset = id
 	return item.Deserialize(&b.r)
 }
 
 //Get items starting from id. If any error occur, the error is returned.
 func (b *blackBearSerializerReader) GetItems(id int64, items ...Serializer) error {
+	b.db.rwlock.RLock()
+	defer b.db.rwlock.RUnlock()
+
 	b.r.Offset = id
 	var err error = nil
 	for _, item := range items {

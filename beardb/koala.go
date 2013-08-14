@@ -42,6 +42,24 @@ func (k *koala) Size() int64 {
 	return int64(len(*k))
 }
 
+func (k *koala) Truncate(size int64) error {
+	if size <= k.Size() { //Shrink
+		*k = (*k)[:size]
+		return nil
+	} else {
+		empty := make([]byte, int(size-k.Size()))
+		*k = append(*k, empty...)
+		return nil
+	}
+}
+
+//Trim the koala cap to at most len+margin
+func (k *koala) Trim(margin int) {
+	if len(*k)+margin < cap(*k) {
+		*k = append(koala(nil), (*k)[:len(*k)+margin]...)[:len(*k)]
+	}
+}
+
 func (k *koala) ToFile(path string) error {
 	file, err := os.Create(path)
 	if err != nil {

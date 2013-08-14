@@ -9,6 +9,7 @@ type BearStorage interface {
 	io.WriterAt
 	io.ReaderAt
 	io.Closer
+	Truncate(size int64) error
 	Size() int64 //Return the current Offset
 }
 

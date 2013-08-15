@@ -39,6 +39,30 @@ func (o *SafeReader) Read(p []byte) (n int, err error) {
 	return
 }
 
+//Wrap an ReadWriterAt to a threadsafe io.ReadWriter
+//=============================================================================
+type ReadWriterAt interface {
+	io.ReaderAt
+	io.WriterAt
+}
+
+type SafeReadWriter struct {
+	ReadWriterAt
+	Offset int64
+}
+
+func (o *SafeReadWriter) Read(p []byte) (n int, err error) {
+	n, err = o.ReadAt(p, o.Offset)
+	o.Offset += int64(n)
+	return
+}
+
+func (i *SafeReadWriter) Write(p []byte) (n int, err error) {
+	n, err = i.WriteAt(p, i.Offset)
+	i.Offset += int64(n)
+	return
+}
+
 //Serializer API
 //=============================================================================
 //Serialize writes serialized bytes to io.Writer and returns any error

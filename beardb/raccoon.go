@@ -15,6 +15,6 @@ func NewRaccoon(path string) *raccoon {
 }
 
 func (r *raccoon) Size() int64 {
-        size, _ := r.Seek(0, os.SEEK_END)
+	size, _ := r.Seek(0, os.SEEK_END)
 	return size
 }
